@@ -1,0 +1,21 @@
+{% extends "basic.html" %}
+
+{% block content %}
+
+<body style="background-image: url(../static/thank_you_background.jpg);">
+<div class="bg-danger.bg-gradient" style="width:auto; margin: 30px; border-radius: 20px;">
+    <h1 class="text-success-emphasis">Thanks for signing up! {{first}} {{last}}</h1>
+</div>
+
+<div style="margin: 30px;">
+    <h1 class="text-success-emphasis">Let's get you an Avatar!</h1>
+</div>
+<div>
+    <form action="{{url_for('getting_avatar')}}">
+        <input style="margin: 30px;" type="submit"  value="Create an Avatar">
+    </form>
+</div>
+</body>
+
+
+{% endblock %}

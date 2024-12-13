@@ -1,0 +1,23 @@
+
+{% extends "basic.html" %}
+
+{% block content %}
+    <body style="background-image: url(../static/aphrodata_logo.jpg);background-size: cover; ">
+        
+    <br><br><br><br>
+        <div class="p-3 mb-2 bg-body-secondary", style="width: 50%; margin: auto; border-radius: 20px; text-align: center;">
+            <h2 style="font-size: 72px;">Introduction</h2>
+            <p style="font-size: 36px;">In Aphrodata you will be able to create</p>
+            <p style="font-size: 36px;">your own 3D digital Avatar</p>
+            <p style="font-size: 36px;">Wanna sign up?</p>
+            
+        </div>
+        <div style="width: 50%; margin: auto; text-align: center;">
+            <a href="{{url_for('sign_up')}}">
+                <button type="button" class="btn btn-secondary btn-lg">Sign Up</button>
+            </a>
+        </div>
+        
+    </body>
+    </html>
+{% endblock %}

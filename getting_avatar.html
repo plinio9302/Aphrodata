@@ -1,0 +1,163 @@
+{% extends "basic.html" %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Avatar Generator</title>
+    <style>
+        html, body, .frame {
+            width: 1080px;
+            height: 800px;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            font-size: 14px;
+            border: none;
+        }
+        .event-log {
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: scroll;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+        }
+        .metadata {
+            border: 1px solid #df68a2;
+            background-color: #ffeef0;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body  style="background-image: url(../static/aphrodata_logo.jpg);">
+
+    <h1 class="text-center">Ready Player Me Avatar Generator</h1>
+
+    <!-- Form to select gender and login -->
+    <h2>Select Gender</h2>
+    <div style="margin:30px 0px 30px 0px ;">
+        <form action="{{url_for('getting_avatar')}}" method="POST">
+            <label for="gender">Select Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="male" {% if selected_gender == 'male' %}selected{% endif %}>Male</option>
+                <option value="female" {% if selected_gender == 'female' %}selected{% endif %}>Female</option>
+            </select>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <!-- Display Access Token -->
+    {% if access_token %}
+        <!-- <h3>Your Access Token</h3>
+        <p>{{ access_token }}</p> -->
+        <input type="button" value="Open Ready Player Me" onClick="displayIframe('{{ access_token }}', '{{ selected_gender }}')" />
+    {% else %}
+        <p>Please select a gender to generate an access token.</p>
+    {% endif %}
+
+    <!-- Display Error Message -->
+    {% if error_message %}
+        <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+
+    <!-- Ready Player Me iFrame -->
+    <iframe id="frame" class="frame" allow="camera *; microphone *; clipboard-write" hidden></iframe>
+
+    <!-- Display Avatar URL -->
+    <h2>Generated Avatar</h2>
+    <p id="avatarUrl">Avatar URL: None</p>
+    <a id="downloadAvatar" href="{{url_for('getting_avatar')}}" download style="display: none;">Download Avatar for {{first}} {{last}}</a>
+
+    <!-- Display Avatar Metadata -->
+    <div id="avatarMetadata" class="metadata" style="display: none;"></div>
+
+    <!-- Event Log -->
+    <h2>Event Log</h2>
+    <div id="eventLog" class="event-log"></div>
+
+    <script>
+        const subdomain = 'aphrodata'; // Replace with your subdomain
+        const frame = document.getElementById('frame');
+        const eventLog = document.getElementById('eventLog'); // For displaying events dynamically
+        const avatarUrlElement = document.getElementById('avatarUrl'); // To display avatar URL
+        const downloadLink = document.getElementById('downloadAvatar'); // To download the avatar
+        const metadataElement = document.getElementById('avatarMetadata'); // To display metadata
+
+        // Open the Ready Player Me Avatar Creator in the iFrame with the token and gender
+        function displayIframe(token, gender) {
+            if (!token) {
+                alert("Access token is required to open the avatar creator.");
+                return;
+            }
+            const genderParam = gender ? `&gender=${gender}` : '';
+            frame.src = `https://${subdomain}.readyplayer.me/avatar?frameApi&token=${token}${genderParam}`;
+            frame.hidden = false;
+        }
+
+        // Listen for events from the iFrame
+        window.addEventListener("message", function (event) {
+            const json = parseEvent(event);
+
+            // Filter events only from Ready Player Me
+            if (json?.source !== "readyplayerme") {
+                return;
+            }
+
+            // Log the event for debugging or display
+            console.log("Event received:", json);
+            const eventHtml = `<p><strong>${json.eventName}:</strong> ${JSON.stringify(json, null, 2)}</p>`;
+            eventLog.innerHTML += eventHtml;
+
+            // Handle specific events
+            if (json.eventName === "v1.frame.ready") {
+                console.log("The iFrame is ready.");
+                // Subscribe to all events
+                frame.contentWindow.postMessage(
+                    JSON.stringify({
+                        target: "readyplayerme",
+                        type: "subscribe",
+                        eventName: "v1.**" // Subscribe to all events in version 1
+                    }),
+                    "*"
+                );
+
+                frame.contentWindow.postMessage(
+                    JSON.stringify({
+                        target: "readyplayerme",
+                        type: "subscribe",
+                        eventName: "v2.**" // Subscribe to all events in version 2
+                    }),
+                    "*"
+                );
+            }
+
+            if (json.eventName === "v1.avatar.exported" || json.eventName === "v2.avatar.exported") {
+                const avatarUrl = json.data.url;
+                avatarUrlElement.innerText = `Avatar URL: ${avatarUrl}`;
+                downloadLink.style.display = "block";
+                downloadLink.href = avatarUrl; // Set download link
+
+                if (json.eventName === "v2.avatar.exported") {
+                    const metadata = json.data.metadata;
+                    metadataElement.style.display = "block";
+                    metadataElement.innerHTML = `<strong>Avatar Metadata:</strong><pre>${JSON.stringify(metadata, null, 2)}</pre>`;
+                }
+            }
+        });
+
+        // Parse event data safely
+        function parseEvent(event) {
+            try {
+                return JSON.parse(event.data);
+            } catch (error) {
+                console.error("Failed to parse event data:", error);
+                return null;
+            }
+        }
+    </script>
+
+</body>
+{% endblock %}
